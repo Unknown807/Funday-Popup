@@ -1,15 +1,14 @@
 # native imports
-import configparser as cfp
 import os
-from playsound import playsound
+import time
 import tkinter as tk
+import configparser as cfp
 from threading import Thread
 from time import gmtime, strftime
-import time
-from winsound import *
 
 # external imports
-
+from PIL import Image, ImageTk, ImageDraw, ImageFont
+from playsound import playsound
 
 class Main(tk.Tk):
     '''
@@ -19,12 +18,18 @@ class Main(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # instance properties
+        self.event_times = None
+        self.weekdays = {0: "monday", 1: "tuesday", 2: "wednesday", 3: "thursday", 4: "friday", 5: "saturday", 6: "sunday"}
+        self.image = None
+        self.image_holder = None
+
         # roughly center window on screen
-        win_width = 500
-        win_height = 400
-        screen_width = self.winfo_screenwidth()//2 - win_width//2
-        screen_height = self.winfo_screenheight()//2 - win_height//2
-        self.geometry(f"{win_width}x{win_height}+{screen_width}+{screen_height}")
+        self.win_width = 500
+        self.win_height = 400
+        screen_width = self.winfo_screenwidth()//2 - self.win_width//2
+        screen_height = self.winfo_screenheight()//2 - self.win_height//2
+        self.geometry(f"{self.win_width}x{self.win_height}+{screen_width}+{screen_height}")
 
         # Add some constraints to the window
         self.resizable(0, 0)
@@ -58,10 +63,30 @@ class Main(tk.Tk):
             theme_sections = [t for t in all_sections if current_theme in t]
             print(theme_sections)
 
+            #self.displayImage(cpr["Theme Krabs 22 00"]["image"])
             #cpr["Theme Krabs 22 00"]["sound"]
+
+            self.startListening()
         
         except Exception as e:
             self.writeToLog(f"Error while reading config file: {e}")
+
+    def startListening(self):
+        while True:
+            pass
+
+    def displayImage(self, image_file):
+        if (self.image_holder != None):
+            self.image_holder.unpack()
+            self.image_holder = None
+
+        img = Image.open("./images/"+image_file)
+        img = img.resize((self.win_width, self.win_height))
+        self.image = ImageTk.PhotoImage(img)
+        self.image_holder = tk.Label(self, image=self.image)
+        self.image_holder.image = self.image
+
+        self.image_holder.pack(side="top")
 
     def playSound(self, sound_file):
         T = Thread(target = lambda: playsound("./sounds/"+sound_file))
