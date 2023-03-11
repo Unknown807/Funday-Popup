@@ -87,9 +87,20 @@ class Main(tk.Tk):
             elif (len(args) == 3):
                 if (self.matchingWeekday(args[0]) and self.matchingTime(args[1], args[2])):
                     self.showWindow(event)
+            
+            elif (len(args) == 5):
+                if (self.matchingDateTime(args)):
+                    self.showWindow(event)
 
             else:
                 self.writeToLog("Wrong format of event time")
+
+    def matchingDateTime(self, args):
+        now = datetime.now()
+        dts = [int(arg) for arg in args]
+
+        return dts[0] == now.day and dts[1] == now.month and dts[2] == now.year and \
+               dts[3] == now.hour and dts[4] == now.minute
 
     def matchingWeekday(self, day):
         today = datetime.today().weekday()
