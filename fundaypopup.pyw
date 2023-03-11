@@ -17,6 +17,10 @@ class Main(tk.Tk):
     directly, or it will run eventually on its own at the designated time
     '''
     def __init__(self, *args, **kwargs):
+        '''
+        Constructor, sets window in the center of screen and configures the window
+        to prevent it from closing, to always be on top and to hide it initially (while no event has occurred)
+        '''
         super().__init__(*args, **kwargs)
 
         # instance properties
@@ -47,7 +51,7 @@ class Main(tk.Tk):
     def readInConfigAndStartListening(self):
         '''
         Reads the config file and sets the required variables and values needed
-        to run the Funday program
+        to run the program
         '''
         if (not os.path.isfile("fundays.ini")):
             self.writeToLog("Config file missing")
@@ -64,6 +68,12 @@ class Main(tk.Tk):
             self.writeToLog(f"Error while reading config file / listening: {e}")
 
     def startListening(self):
+        '''
+        Starts a while loop that will repeatedly check for what events should happen.
+        If in_event is None then it means its just finished doing an event, so to prevent the same event
+        from playing again, it does a minute delay
+        '''
+        
         if self.in_event is None:
             time.sleep(60)
             self.in_event = False
@@ -72,6 +82,11 @@ class Main(tk.Tk):
             self.checkForEvent()
 
     def checkForEvent(self):
+        '''
+        Every other second, checks whether any of the events for the chosen theme (as set in the config)
+        should begin
+        '''
+
         time.sleep(1)
         for event in self.event_times.keys():
             args = event.split(" ")
@@ -96,6 +111,11 @@ class Main(tk.Tk):
                 self.writeToLog("Wrong format of event time")
 
     def matchingDateTime(self, args):
+        '''
+        Checks if the current year, month, day, hour, minute match that of an event. This is used
+        for one off events, like holidays
+        '''
+
         now = datetime.now()
         dts = [int(arg) for arg in args]
 
@@ -103,17 +123,31 @@ class Main(tk.Tk):
                dts[3] == now.hour and dts[4] == now.minute
 
     def matchingWeekday(self, day):
+        '''
+        Checks if the current weekday matches the one of an event
+        '''
+        
         today = datetime.today().weekday()
         event = time.strptime(day.lower(), "%A").tm_wday
         return event == today
 
     def matchingTime(self, hour, minute):
+        '''
+        Checks if the current hour and minute match the one of an event
+        '''
+        
         now = datetime.now()
         h = now.hour
         m = now.minute
         return (int(hour) == h and int(minute) == m)
 
     def showWindow(self, event):
+        '''
+        Will reveal the hidden window and load appropriate sound and image for the
+        event thats going to happen. This will also stop the listener in this thread
+        by setting the in_event flag
+        '''
+        
         self.in_event = True
         event_theme = self.current_theme+" "+event
 
@@ -135,6 +169,11 @@ class Main(tk.Tk):
         self.withdraw()
 
     def displayImage(self, theme_name):
+        '''
+        Reads the image file from the config and displays it in a TK Label, will resize the image to fit the 640x480
+        dimensions and can call the method to write captions on the image as well
+        '''
+
         if (self.image_holder != None):
             self.image_holder.pack_forget()
             self.image_holder = None
@@ -153,6 +192,12 @@ class Main(tk.Tk):
         self.image_holder.pack(side="top")
 
     def writeCaptionsOnImage(self, img, theme_name):
+        '''
+        Will read the font type, font size, font colour, top caption (if it exists) and bottom caption
+        (if it exists) and display it on the image you've provided. It will also attempt to center the text
+        and give it a slight stroke width
+        '''
+
         editable_image = ImageDraw.Draw(img)
         font_file = ImageFont.truetype("./fonts/"+self.cfp[theme_name]["font"], int(self.cfp[theme_name]["fontsize"]))
         a, d = font_file.getmetrics()
@@ -182,6 +227,12 @@ class Main(tk.Tk):
             editable_image.text((self.win_width/2-text_width/2, self.win_height-(a+d)-5), self.cfp[theme_name]["bottomcaption"], font=font_file, fill=rgb, stroke_width=1, stroke_fill=(0, 0, 0))
 
     def playSound(self, sound_file):
+        '''
+        Starts a new thread to play the sound file so the main thread isn't blocked. Will
+        stop the listening and wait until the sound stops playing, where it will then start 
+        listening in the new thread, leaving the (old) main thread to exit
+        '''
+        
         def waitForSoundToFinish(sound_file):
             try:
                 playsound("./sounds/"+sound_file, block=True)
