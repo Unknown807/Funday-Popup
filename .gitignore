@@ -130,5 +130,6 @@ dmypy.json
 
 images/
 sounds/
+fonts/
 fundays.ini
 log.txt

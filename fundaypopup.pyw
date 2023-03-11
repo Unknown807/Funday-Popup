@@ -41,7 +41,7 @@ class Main(tk.Tk):
         self.update()
         self.protocol("WM_DELETE_WINDOW", lambda: None)
 
-        #self.hideWindow()
+        self.hideWindow()
         self.readInConfigAndStartListening()
 
     def readInConfigAndStartListening(self):
@@ -58,10 +58,10 @@ class Main(tk.Tk):
             self.current_theme = self.cfp["CurrentFundayTheme"]["ThemeName"]
             self.event_times = {t.replace(self.current_theme+" ", ""):0 for t in all_sections if self.current_theme in t}
 
-            self.displayImage(self.cfp["Krabs 14 15"]["image"])
-            self.playSound(self.cfp["Krabs 14 15"]["sound"])
+            # self.displayImage("Krabs Saturday 15 20")
+            # self.playSound(self.cfp["Krabs Saturday 15 20"]["sound"])
 
-            #self.startListening()
+            self.startListening()
         
         except Exception as e:
             self.writeToLog(f"Error while reading config file / listening: {e}")
@@ -107,6 +107,7 @@ class Main(tk.Tk):
 
     def showWindow(self, event):
         self.in_event = True
+        event_theme = self.current_theme+" "+event
 
         if (not os.path.isdir("images")):
             self.writeToLog("Images folder missing")
@@ -114,26 +115,63 @@ class Main(tk.Tk):
         if (not os.path.isdir("sounds")):
             self.writeToLog("Sounds folder missing")
 
-        event_theme = self.current_theme+" "+event
-        self.displayImage(self.cfp[event_theme]["image"])
+        if (self.cfp.has_option(event_theme, "font")):
+            if (not os.path.isdir("fonts")):
+                self.writeToLog("Fonts folder missing")
+
+        self.displayImage(event_theme)
         self.deiconify()
         self.playSound(self.cfp[event_theme]["sound"])
 
     def hideWindow(self):
         self.withdraw()
 
-    def displayImage(self, image_file):
+    def displayImage(self, theme_name):
         if (self.image_holder != None):
             self.image_holder.pack_forget()
             self.image_holder = None
 
+        image_file = self.cfp[theme_name]["image"]
         img = Image.open("./images/"+image_file)
         img = img.resize((self.win_width, self.win_height))
+
+        if (self.cfp[theme_name]["font"] is not None):
+            self.writeCaptionsOnImage(img, theme_name)
+
         self.image = ImageTk.PhotoImage(img)
         self.image_holder = tk.Label(self, image=self.image)
         self.image_holder.image = self.image
 
         self.image_holder.pack(side="top")
+
+    def writeCaptionsOnImage(self, img, theme_name):
+        editable_image = ImageDraw.Draw(img)
+        font_file = ImageFont.truetype("./fonts/"+self.cfp[theme_name]["font"], int(self.cfp[theme_name]["fontsize"]))
+        a, d = font_file.getmetrics()
+
+        text_color = self.cfp[theme_name]["color"].lower()
+        if (text_color.replace(" ", "").isdigit()):
+            rgb = tuple([int(i) for i in text_color.split(" ")])
+        else:
+            rgb = {
+                "white": (255, 255, 255),
+                "black": (0, 0, 0),
+                "red": (255, 77, 77),
+                "blue": (0, 85, 255),
+                "green": (119, 255, 51),
+                "yellow": (255, 255, 25),
+                "orange": (255, 128, 0),
+                "pink": (255, 102, 229),
+                "purple": (179, 25, 255)
+            }[text_color]
+
+        if (self.cfp.has_option(theme_name, "topcaption")):
+            text_width = editable_image.textlength(self.cfp[theme_name]["topcaption"], font_file)
+            editable_image.text((self.win_width/2-text_width/2, d), self.cfp[theme_name]["topcaption"], font=font_file, fill=rgb)
+
+        if (self.cfp.has_option(theme_name, "bottomcaption")):
+            text_width = editable_image.textlength(self.cfp[theme_name]["bottomcaption"], font_file)
+            editable_image.text((self.win_width/2-text_width/2, self.win_height-(a+d)), self.cfp[theme_name]["bottomcaption"], font=font_file, fill=rgb)
 
     def playSound(self, sound_file):
         def waitForSoundToFinish(sound_file):
