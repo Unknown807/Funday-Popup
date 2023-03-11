@@ -128,8 +128,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-images/
-sounds/
-fonts/
-fundays.ini
 log.txt

@@ -58,9 +58,6 @@ class Main(tk.Tk):
             self.current_theme = self.cfp["CurrentFundayTheme"]["ThemeName"]
             self.event_times = {t.replace(self.current_theme+" ", ""):0 for t in all_sections if self.current_theme in t}
 
-            # self.displayImage("Krabs Saturday 15 20")
-            # self.playSound(self.cfp["Krabs Saturday 15 20"]["sound"])
-
             self.startListening()
         
         except Exception as e:
@@ -167,33 +164,35 @@ class Main(tk.Tk):
 
         if (self.cfp.has_option(theme_name, "topcaption")):
             text_width = editable_image.textlength(self.cfp[theme_name]["topcaption"], font_file)
-            editable_image.text((self.win_width/2-text_width/2, d), self.cfp[theme_name]["topcaption"], font=font_file, fill=rgb)
+            editable_image.text((self.win_width/2-text_width/2, d+5), self.cfp[theme_name]["topcaption"], font=font_file, fill=rgb, stroke_width=1, stroke_fill=(0, 0, 0))
 
         if (self.cfp.has_option(theme_name, "bottomcaption")):
             text_width = editable_image.textlength(self.cfp[theme_name]["bottomcaption"], font_file)
-            editable_image.text((self.win_width/2-text_width/2, self.win_height-(a+d)), self.cfp[theme_name]["bottomcaption"], font=font_file, fill=rgb)
+            editable_image.text((self.win_width/2-text_width/2, self.win_height-(a+d)-5), self.cfp[theme_name]["bottomcaption"], font=font_file, fill=rgb, stroke_width=1, stroke_fill=(0, 0, 0))
 
     def playSound(self, sound_file):
         def waitForSoundToFinish(sound_file):
-            playsound("./sounds/"+sound_file, block=True)
-            self.in_event = None
-            self.hideWindow()
-            self.startListening()
+            try:
+                playsound("./sounds/"+sound_file, block=True)
+                self.in_event = None
+                self.hideWindow()
+                self.startListening()
+            except Exception as e:
+                self.writeToLog(f"Error during playsound: {e}")
 
         T = Thread(target = waitForSoundToFinish, args=(sound_file,))
         T.start()
 
     def writeToLog(self, msg):
         '''
-        Logs issues that happen during the program's life cycle to the log file
-        so that you can potentially fix them
+        Writes issues that happen during the program's life cycle to the log file.
+        Also exits out of the program
         '''
         with open("log.txt", "a") as file:
             file.write(f"{datetime.now()}: {msg}\n")
         
         self.destroy()
         sys.exit(1)
-
 
 if __name__ == "__main__":
     root = Main()
